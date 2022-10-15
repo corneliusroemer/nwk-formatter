@@ -1,10 +1,12 @@
 # Start with Typer CLI boilerplate
 
-import typer
+from contextlib import nullcontext
 from pathlib import Path
 
-app = typer.Typer()
+import ipdb
+import typer
 
+app = typer.Typer()
 
 
 def main(
@@ -18,40 +20,95 @@ def main(
         readable=True,
         resolve_path=True,
     ),
-    outfile: Path = typer.Option(...,help="Output file"),
+    outfile: Path = typer.Option(..., help="Output file"),
     inplace: bool = typer.Option(False, help="Overwrite input file"),
+    debug: bool = typer.Option(False, help="Use ipdb upon exception"),
 ):
+    with ipdb.launch_ipdb_on_exception() if debug else nullcontext():
+        import re
+        from uuid import uuid4
 
-    from Bio import Phylo
-    from uuid import uuid4
+        from Bio import Phylo
 
-    def recursive_print(clade: Phylo.BaseTree.Clade, string: list = [], indent: int = 0, last=True) -> str:
-        if clade.is_terminal():
-            string.append("  " * indent + clade.name + ("," if not last else ""))
+        def recursive_print(
+            clade: Phylo.BaseTree.Clade,
+            string: list = [],
+            indent: int = 0,
+            last=True,
+        ) -> str:
+            if clade.is_terminal():
+                string.append(
+                    "  " * indent + clade.name + ("," if not last else "")
+                )
+                return string
+            else:
+                string.append("  " * indent + "(")
+
+                for (pos, subclade) in enumerate(clade):
+                    string = recursive_print(
+                        subclade, string, indent + 1, pos == len(clade) - 1
+                    )
+                string.append(
+                    "  " * indent
+                    + ")"
+                    + (
+                        clade.name
+                        if clade.name
+                        else f"internal_{str(uuid4())[0:4]}"
+                    )
+                    + ("," if not last else "")
+                )
             return string
-        else:
-            string.append("  " * indent + "(")
 
-            for (pos, subclade) in enumerate(clade):
-                string = recursive_print(subclade, string, indent + 1, pos == len(clade) - 1)
-            string.append("  " * indent + ")" + (clade.name if clade.name else f"internal_{str(uuid4())[0:4]}") + ("," if not last else ""))
-        return string
+        with open(file, "r") as f:
+            # Check if regex matches
+            file_content = f.read()
+            regex = "[^ ()\s,]\s+[^ ()\s,;]"
 
+            match = re.search(regex, file_content)
+            if match:
+                print("Found whitespace in clade names")
+                for (pos, match) in enumerate(re.finditer(regex, file_content)):
+                    print("")
+                    print(f"Match {pos + 1}:")
+                    match_start = match.start()
+                    match_end = match.end()
+                    file_content_lines = file_content.split("\n")
+                    char_count = 0
+                    lines = dict(enumerate(file_content_lines))
+                    for line_number, line in enumerate(file_content_lines):
+                        char_count += len(line) + 1
+                        if char_count > match_start:
+                            print(f"Line {line_number + 1}: {line}")
+                            print(
+                                f"Line {line_number+2}: {lines[line_number+1]}"
+                            )
+                            break
+                print(
+                    "\nERROR: Invalid input Newick, clade name(s) contain(s) whitespace"
+                )
+                raise typer.Exit(1)
 
-    trees = list(Phylo.parse(file,"newick"))
-    for tree in trees:
-        clade_names = []
-        for clade in tree.find_clades():
-            if clade.name is not None:
-                if clade.name in clade_names:
-                    raise Exception(f"Duplicate name {clade.name} detected")
-                clade_names.append(clade.name)
-        if inplace:
-            outfile = file
-        with open(outfile, "w") as f:
-            for line in recursive_print(tree.root):
-                f.write(line + "\n")
-            f.write(";")
+        trees = list(Phylo.parse(file, "newick"))
+        for tree in trees:
+            clade_names = []
+            for clade in tree.find_clades():
+                if clade.name is not None:
+                    if clade.name in clade_names:
+                        raise Exception(f"Duplicate name {clade.name} detected")
+                    clade_names.append(clade.name)
+                elif clade.is_terminal():
+                    raise Exception(
+                        f"Terminal clade without name detected after {clade_names[-1]}"
+                    )
+            if inplace:
+                outfile = file
+            with open(outfile, "w") as f:
+                for line in recursive_print(tree.root):
+                    f.write(line + "\n")
+                f.write(";")
+
 
 if __name__ == "__main__":
-    typer.run(main)
+    with ipdb.launch_ipdb_on_exception():
+        typer.run(main)
