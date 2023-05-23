@@ -33,3 +33,25 @@ Outputting list of terminal nodes into a text file:
 - Python
 - Typer
 - BioPython
+
+## Release
+
+This project uses [Poetry](https://python-poetry.org/) for dependency management and packaging.
+
+To build a release, run:
+
+```bash
+poetry build
+```
+
+To publish a release to PyPI, run:
+
+```bash
+poetry publish
+```
+
+To publish the release to Github, run:
+
+```bash
+gh release create 0.2.0 dist/*
+```

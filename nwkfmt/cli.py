@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from pathlib import Path
+from typing import List
 
 import typer
 
@@ -19,12 +20,14 @@ def test(
     ),
     outfile: Path = typer.Option(None, help="Output file"),
     inplace: bool = typer.Option(False, help="Overwrite input file"),
-    terminals=typer.Option(None, help="Output path for list of tips"),
+    terminals=typer.Option(None, help="Output path for list of tip names"),
+    internals=typer.Option(None, help="Output path for list of internal node names"),
 ):
     import re
     from uuid import uuid4
 
     from Bio import Phylo
+    from Bio.Phylo import BaseTree
 
     def recursive_print(
         clade: Phylo.BaseTree.Clade,
@@ -50,7 +53,7 @@ def test(
                 + (
                     clade.name
                     if clade.name
-                    else f"internal_{str(uuid4())[0:4]}"
+                    else f"internal_{str(uuid4())[0:8]}"
                 )
                 + ("," if not last else "")
             )
@@ -82,7 +85,7 @@ def test(
             )
             raise typer.Exit(1)
 
-    trees = list(Phylo.parse(file, "newick"))
+    trees: List[BaseTree.Tree] = list(Phylo.parse(file, "newick"))
     for tree in trees:
         clade_names = []
         for clade in tree.find_clades():
@@ -102,10 +105,13 @@ def test(
                     f.write(line + "\n")
                 f.write(";")
         if terminals:
-            with open(terminals):
+            with open(terminals, "w") as f:
                 for clade in tree.get_terminals():
                     f.write(clade.name + "\n")
-
+        if internals:
+            with open(internals, "w") as f:
+                for nonterminal in tree.get_nonterminals():
+                    f.write(nonterminal.name + "\n")
 
 def entry_point() -> None:
     app()
