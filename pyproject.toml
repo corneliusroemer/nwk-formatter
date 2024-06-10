@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nwkfmt"
-version = "0.2.0"
+version = "0.3.0"
 description = "Simple Newick tree validator and formatter"
 authors = ["Cornelius Roemer <cornelius.roemer@gmail.com>"]
 readme = "README.md"
@@ -9,9 +9,9 @@ readme = "README.md"
 nwkfmt = "nwkfmt.cli:entry_point"
 
 [tool.poetry.dependencies]
-python = ">=3.8, <4"
+python = ">=3.8"
 biopython = "^1.73"
-typer = ">=0.6, <1"
+typer = ">=0.9.0"
 
 [tool.poetry.dev-dependencies]
 
