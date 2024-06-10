@@ -2,6 +2,12 @@
 
 Simple utility to validate and format Newick trees.
 
+The main use of this utility is to validate constraint trees used with IQtree2.
+
+IQtree2 can throw hard to understand errors when using constraint trees even if the tree is technically a valid Newick tree.
+
+This utility will catch many of those errors and provide a more detailed error message.
+
 ## Usage
 
 Validation without formatting:
