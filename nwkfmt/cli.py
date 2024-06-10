@@ -6,8 +6,9 @@ import typer
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
+
 @app.command()
-def test( 
+def test(
     file: Path = typer.Argument(
         ...,
         help="Path to the file to be processed",
@@ -36,25 +37,19 @@ def test(
         last=True,
     ) -> str:
         if clade.is_terminal():
-            string.append(
-                "  " * indent + clade.name + ("," if not last else "")
-            )
+            string.append("  " * indent + clade.name + ("," if not last else ""))
             return string
         else:
             string.append("  " * indent + "(")
 
-            for (pos, subclade) in enumerate(clade):
+            for pos, subclade in enumerate(clade):
                 string = recursive_print(
                     subclade, string, indent + 1, pos == len(clade) - 1
                 )
             string.append(
                 "  " * indent
                 + ")"
-                + (
-                    clade.name
-                    if clade.name
-                    else f"internal_{str(uuid4())[0:8]}"
-                )
+                + (clade.name if clade.name else f"internal_{str(uuid4())[0:8]}")
                 + ("," if not last else "")
             )
         return string
@@ -67,7 +62,7 @@ def test(
         match = re.search(regex, file_content)
         if match:
             print("Found whitespace in clade names")
-            for (pos, match) in enumerate(re.finditer(regex, file_content)):
+            for pos, match in enumerate(re.finditer(regex, file_content)):
                 print("")
                 print(f"Match {pos + 1}:")
                 match_start = match.start()
@@ -80,9 +75,7 @@ def test(
                         print(f"Line {line_number + 1}: {line}")
                         print(f"Line {line_number+2}: {lines[line_number+1]}")
                         break
-            print(
-                "\nERROR: Invalid input Newick, clade name(s) contain(s) whitespace"
-            )
+            print("\nERROR: Invalid input Newick, clade name(s) contain(s) whitespace")
             raise typer.Exit(1)
 
     trees: List[BaseTree.Tree] = list(Phylo.parse(file, "newick"))
@@ -113,8 +106,10 @@ def test(
                 for nonterminal in tree.get_nonterminals():
                     f.write(nonterminal.name + "\n")
 
+
 def entry_point() -> None:
     app()
+
 
 if __name__ == "__main__":
     entry_point()
